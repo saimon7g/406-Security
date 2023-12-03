@@ -82,8 +82,9 @@ def format_hex(hex_string):
         return hex_string
 
 def convert_to_hex(string):
-    if len(string)<16:
-        for i in range(128-len(string)):
+    length = len(string)
+    if length<16:
+        for i in range(0,16-length):
             string+=" "
     hex_string = ""
     for char in string:
@@ -216,7 +217,7 @@ def inverse_mix_column(matrix):
 
 
 inputKey = "Thats my Kung Fu"
-inputText = "Two One Nine Two"
+inputText = "yo yo"
 convertedHexKey = convert_to_hex(inputKey)
 
 roundKeys = []
@@ -233,7 +234,7 @@ for i in range(0,10):
 #     print("Round Key ",i,": ",roundKeys[i])
     
 plainText = convert_to_hex(inputText)
-# print("Plain Text: ",plainText)
+print("Plain Text: ",plainText)
 state = column_major_convert(plainText)
 # print("State: ",state)
 # add round key
@@ -336,11 +337,3 @@ messageReceived = column_major_to_string(cipherMatrix)
 
 messageReceived = convert_to_string(messageReceived)
 print("Message Received: ",messageReceived)
-
-
-
-
-
-
-
-
