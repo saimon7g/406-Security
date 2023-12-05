@@ -1,8 +1,42 @@
 import socket
 import threading
 import pickle
-import Elliptic
 import random
+import importlib
+
+f1='1905056_ECC'
+Elliptic=importlib.import_module(f1)
+
+def establish_key(client_socket):
+    # Receive the shared parameters from client
+    res=client_socket.recv(1024)
+    deserialized_response=pickle.loads(res)
+    a=deserialized_response['a']
+    b=deserialized_response['b']
+    p=deserialized_response['p']
+    x=deserialized_response['x']
+    y=deserialized_response['y']
+    print("parameters: ",deserialized_response)
+    # change key here 
+    e=Elliptic.generate_E(p)
+    private_key=random.randint(1,e)
+    
+    public_key=Elliptic.calculate_kG(a,b,p,x,y,private_key)
+    message = "Public key: "
+    data={'message':message,'public_key':public_key}
+    serialized_data=pickle.dumps(data)
+    client_socket.sendall(serialized_data)
+    # receive the public key from client
+    res=client_socket.recv(1024)
+    deserialized_response=pickle.loads(res)
+    received_public_key=deserialized_response['public_key']
+    print("received public key from client: ",received_public_key)
+    encryption_key=Elliptic.calculate_kG(a,b,p,received_public_key[0],received_public_key[1],private_key)[0]
+    print("encryption key at server: ",encryption_key)
+    
+    return encryption_key
+    
+    
 
 def handle_client(client_socket, addr):
     # Send a welcome
@@ -21,34 +55,7 @@ def handle_client(client_socket, addr):
 
     while True:
         try:
-            # Receive the shared parameters from client
-            res=client_socket.recv(1024)
-            deserialized_response=pickle.loads(res)
-            a=deserialized_response['a']
-            b=deserialized_response['b']
-            p=deserialized_response['p']
-            x=deserialized_response['x']
-            y=deserialized_response['y']
-            print("parameters: ",deserialized_response)
-            # change key here 
-            e=Elliptic.generate_E(p)
-            private_key=random.randint(1,e)
-            
-            public_key=Elliptic.calculate_kG(a,b,p,x,y,private_key)
-            message = "Public key: "
-            data={'message':message,'public_key':public_key}
-            serialized_data=pickle.dumps(data)
-            client_socket.sendall(serialized_data)
-            # receive the public key from client
-            res=client_socket.recv(1024)
-            deserialized_response=pickle.loads(res)
-            received_public_key=deserialized_response['public_key']
-            print("received public key from client: ",received_public_key)
-            encryption_key=Elliptic.calculate_kG(a,b,p,received_public_key[0],received_public_key[1],private_key)[0]
-            print("encryption key at server: ",encryption_key)
-            
-            
-            
+            encryption_key=establish_key(client_socket)
         except ConnectionResetError:
             # Handle client disconnection
             print(f"Connection with {addr} closed")

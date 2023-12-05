@@ -35,7 +35,7 @@ def generate_E(primeP):
     e2=primeP+1+2*(math.sqrt(primeP))
     e2=int(e2)
     random_number = randprime(e1, e2)
-    print(f"Random number: {random_number}")
+    # print(f"Random number: {random_number}")
     return random_number
 
 def calculate_kG(a,b,p,x,y,k):
@@ -51,7 +51,7 @@ def calculate_kG(a,b,p,x,y,k):
 def get_parameters():
     
     primeP=randprime(10000000000000, 99999999999999999999)
-    print(f"Prime number: {primeP}")
+    # print(f"Prime number: {primeP}")
     a=random.randint(1,10000000)
     x=random.randint(1,primeP-1)
     y=random.randint(1,primeP-1)
@@ -66,5 +66,5 @@ def get_parameters():
     # b=2
     # x=5
     # y=1
-    print(f"a: {a}, b: {b}, x: {x}, y: {y}")
+    # print(f"a: {a}, b: {b}, x: {x}, y: {y}")
     return (a,b,primeP,x,y)
