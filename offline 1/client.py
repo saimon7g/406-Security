@@ -47,7 +47,8 @@ def client_programme():
         received_public_key=deserialized_response['public_key']
         print("received public key from server: ",received_public_key)
         # change key here
-        private_key=12
+        e=Elliptic.generate_E(p)
+        private_key=random.randint(1,e)
         
         public_key=Elliptic.calculate_kG(a,b,p,x,y,private_key)
         # send the public key to server
@@ -58,6 +59,8 @@ def client_programme():
         # calculate the encryption key
         encryption_key=Elliptic.calculate_kG(a,b,p,received_public_key[0],received_public_key[1],private_key)[0]
         print("encryption key at client: ",encryption_key)
+        
+        
         
         
 

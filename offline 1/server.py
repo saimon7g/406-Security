@@ -2,6 +2,7 @@ import socket
 import threading
 import pickle
 import Elliptic
+import random
 
 def handle_client(client_socket, addr):
     # Send a welcome
@@ -30,7 +31,8 @@ def handle_client(client_socket, addr):
             y=deserialized_response['y']
             print("parameters: ",deserialized_response)
             # change key here 
-            private_key=5
+            e=Elliptic.generate_E(p)
+            private_key=random.randint(1,e)
             
             public_key=Elliptic.calculate_kG(a,b,p,x,y,private_key)
             message = "Public key: "
