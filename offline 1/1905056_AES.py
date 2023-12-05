@@ -1,4 +1,5 @@
 from BitVector import *
+import time
 Sbox = (
     [0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76],
     [0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0],
@@ -250,10 +251,8 @@ def ciphertext_resize(plaintext):
         message.append(plaintext[i:i+32])
     return message
    
-
-
-def encryption(key,IV,message):
-    
+def generate_keys(key):
+    start_time=time.time()
     roundKeys = []
     roundKeys.append(key[0:32])
     previousRoundConstant=0x00
@@ -263,6 +262,13 @@ def encryption(key,IV,message):
         roundkey=generate_w_XOR(key[0:32],gOfInput)
         roundKeys.append(roundkey)
         key=roundkey
+    end_time=time.time()
+    print("time to key schedule    :",end_time-start_time)
+    return roundKeys
+    
+
+def encryption(roundKeys,IV,message):
+
     state = column_major_convert(message)
     iv=column_major_convert(IV)
     state=xOR_two_matrix(state,iv)
@@ -281,17 +287,7 @@ def encryption(key,IV,message):
     return cipherTextToRelay
    
    
-def decryption(key,IV,message):
-    
-    roundKeysDecr = []
-    roundKeysDecr.append(key)
-    prevRoundConstant=0x00
-    for i in range(0,10):
-        prevRoundConstant = calculate_round_constant(prevRoundConstant)
-        gOfW=generate_g(key[24:32],prevRoundConstant)
-        roundkeyR=generate_w_XOR(key,gOfW)
-        roundKeysDecr.append(roundkeyR)
-        key=roundkeyR
+def decryption(roundKeysDecr,IV,message):
     cipherMatrix = column_major_convert(message)
     cipherMatrix=xOR_two_matrix(cipherMatrix,column_major_convert(roundKeysDecr[10]))
     # rounds
@@ -316,42 +312,56 @@ def decryption(key,IV,message):
 
 
 def task1_encryption():
-    key=input("Enter the key: ")
+    key=input("Enter the key    :")
     key=key_resizing(key)
+    print("Key in ASCII     :",key)
     key=convert_to_hex(key)
-    IV=input("Enter the IV: ")
-    IV=key_resizing(IV)
-    IV=convert_to_hex(IV)
+    print("Key in HEX   :",key)
+    input_IV=input("Enter the IV v alue     :")
+    input_IV=key_resizing(input_IV)
+    input_IV=convert_to_hex(input_IV)
+    IV=input_IV
     plaintext=input("Enter the message: ")
     message=message_block(plaintext)
     cipher_text=[]
+    keys=generate_keys(key)
+    start_time=time.time()
     for i in range(0,len(message)):
-        temp=encryption(key,IV,message[i])
+        temp=encryption(keys,IV,message[i])
         IV=temp
         cipher_text.append(temp)
-    cipherTextToRelay=""
+    cipherTextToRelay=input_IV
     for i in range(0,len(cipher_text)):
         cipherTextToRelay+=cipher_text[i]
-    print("Cipher Text: ",cipherTextToRelay)
+    end_time=time.time()
+    print("time req to encryot :",end_time-start_time)
+    print("Cipher Text :",cipherTextToRelay)
+    print("Cipher Text in ascii :",convert_to_string(cipherTextToRelay))
     
 def task1_decryption():
     key=input("Enter the key for decryption: ")
-    key=key_resizing(key)
+    key=key_resizing(key) 
+    print("Key in ASCII    :",key)
     key=convert_to_hex(key)
-    IV=input("Enter the IV for decryption: ")
-    IV=key_resizing(IV)
-    IV=convert_to_hex(IV)
-    ciphertext=input("Enter the ciphertext for decryption: ")
+    print("Key in HEX :",key)
+    ciphertext=input("Enter the ciphertext for decryption   :")
+    IV=ciphertext[0:32]
+    ciphertext=ciphertext[32:]
     ciphertext=ciphertext_resize(ciphertext)
     plaintext_array=[]
+    keys=generate_keys(key)
+    start_time=time.time()
     for i in range(0,len(ciphertext)):
-        temp=decryption(key,IV,ciphertext[i])
+        temp=decryption(keys,IV,ciphertext[i])
         IV=ciphertext[i]
         plaintext_array.append(temp)
     plaintext=""
     for i in range(0,len(plaintext_array)):
         plaintext+=convert_to_string(plaintext_array[i])
-    print("Message Received: ",plaintext)
+        
+    end_time=time.time()
+    print("time req to decrypt :",end_time-start_time)
+    print("Message Received :",plaintext)
         
     
     

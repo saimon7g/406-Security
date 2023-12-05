@@ -9,7 +9,8 @@ Elliptic = importlib.import_module(f1)
 
 
 def establish_key(client_socket):
-    shared_parameters=Elliptic.get_parameters()
+    input_bits=input("input number of bits: ")
+    shared_parameters=Elliptic.get_parameters(input_bits)
     a=shared_parameters[0]
     b=shared_parameters[1]
     p=shared_parameters[2]
