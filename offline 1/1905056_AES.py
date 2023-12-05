@@ -1,5 +1,6 @@
 from BitVector import *
 import time
+import secrets
 Sbox = (
     [0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76],
     [0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0],
@@ -94,7 +95,7 @@ def convert_to_string(hex_string):
     for i in range(0,len(hex_string),2):
         string+=chr(int(hex_string[i:i+2],16))
     return string
-
+rvtAW 
 
 
 def calculate_round_constant(prev):
@@ -252,6 +253,7 @@ def ciphertext_resize(plaintext):
     return message
    
 def generate_keys(key):
+    key=str(key)
     start_time=time.time()
     roundKeys = []
     roundKeys.append(key[0:32])
@@ -263,7 +265,7 @@ def generate_keys(key):
         roundKeys.append(roundkey)
         key=roundkey
     end_time=time.time()
-    print("time to key schedule    :",end_time-start_time)
+    print("time to key schedule    :",(end_time-start_time)*1000,"ms")
     return roundKeys
     
 
@@ -317,11 +319,13 @@ def task1_encryption():
     print("Key in ASCII     :",key)
     key=convert_to_hex(key)
     print("Key in HEX   :",key)
-    input_IV=input("Enter the IV v alue     :")
+    input_IV=input("Enter the IV value     :")
     input_IV=key_resizing(input_IV)
     input_IV=convert_to_hex(input_IV)
     IV=input_IV
-    plaintext=input("Enter the message: ")
+    plaintext=input("Enter the message  : ")
+    print("Message in ASCII     :",plaintext)
+    print("Message in HEX   :",convert_to_hex(plaintext))
     message=message_block(plaintext)
     cipher_text=[]
     keys=generate_keys(key)
@@ -334,12 +338,12 @@ def task1_encryption():
     for i in range(0,len(cipher_text)):
         cipherTextToRelay+=cipher_text[i]
     end_time=time.time()
-    print("time req to encryot :",end_time-start_time)
-    print("Cipher Text :",cipherTextToRelay)
-    print("Cipher Text in ascii :",convert_to_string(cipherTextToRelay))
+    print("time req to encrypt :",(end_time-start_time)*1000,"ms")
+    print("Cipher Text in HEX   :",cipherTextToRelay)
+    print("Cipher Text in ascii     :",convert_to_string(cipherTextToRelay))
     
 def task1_decryption():
-    key=input("Enter the key for decryption: ")
+    key=input("Enter the key for decryption     : ")
     key=key_resizing(key) 
     print("Key in ASCII    :",key)
     key=convert_to_hex(key)
@@ -360,12 +364,69 @@ def task1_decryption():
         plaintext+=convert_to_string(plaintext_array[i])
         
     end_time=time.time()
-    print("time req to decrypt :",end_time-start_time)
+    print("time req to decrypt :",(end_time-start_time)*1000,"ms")
+    print("Message in HEX     :",convert_to_hex(plaintext))
     print("Message Received :",plaintext)
         
+    
+def task3_encryption(key):
+    key=key_resizing(key)
+    key=convert_to_hex(key)
+    input_IV=secrets.token_hex(16)
+    # print("IV in HEX   :",input_IV)
+    input_IV=key_resizing(input_IV)
+    input_IV=convert_to_hex(input_IV)
+    IV=input_IV
+    plaintext=input("Enter the message  : ")
+    # print("Message in ASCII     :",plaintext)
+    # print("Message in HEX   :",convert_to_hex(plaintext))
+    message=message_block(plaintext)
+    cipher_text=[]
+    keys=generate_keys(key)
+    
+   
+    for i in range(0,len(message)):
+        temp=encryption(keys,IV,message[i])
+        IV=temp
+        cipher_text.append(temp)
+    cipherTextToRelay=input_IV
+    for i in range(0,len(cipher_text)):
+        cipherTextToRelay+=cipher_text[i]
+    print("Cipher Text in HEX   :",cipherTextToRelay)
+    return cipherTextToRelay  
+    
+def task3_decryption(key,ciphertext):
+    key=key_resizing(key)
+    key=convert_to_hex(key)
+    IV=ciphertext[0:32]
+    ciphertext=ciphertext[32:]
+    ciphertext=ciphertext_resize(ciphertext)
+    plaintext_array=[]
+    keys=generate_keys(key)
+    for i in range(0,len(ciphertext)):
+        temp=decryption(keys,IV,ciphertext[i])
+        IV=ciphertext[i]
+        plaintext_array.append(temp)
+    plaintext=""
+    for i in range(0,len(plaintext_array)):
+        plaintext+=convert_to_string(plaintext_array[i])
+    return plaintext
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
     
 task1_encryption()
 task1_decryption()
+
+

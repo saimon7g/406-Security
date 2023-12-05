@@ -4,7 +4,9 @@ import pickle
 import importlib
 
 f1='1905056_ECC'
+f2='1905056_AES'
 Elliptic = importlib.import_module(f1)
+AES = importlib.import_module(f2)   
 
 
 
@@ -16,7 +18,7 @@ def establish_key(client_socket):
     p=shared_parameters[2]
     x=shared_parameters[3]
     y=shared_parameters[4]
-    print("parameters: ",shared_parameters)
+    # print("parameters: ",shared_parameters)
     parameters={'a':a,'b':b,'p':p,'x':x,'y':y}
     serialized_parameters=pickle.dumps(parameters)
     client_socket.sendall(serialized_parameters)
@@ -37,8 +39,8 @@ def establish_key(client_socket):
     client_socket.sendall(serialized_data)
     # calculate the encryption key
     encryption_key=Elliptic.calculate_kG(a,b,p,received_public_key[0],received_public_key[1],private_key)[0]
-    print("encryption key at client: ",encryption_key)
-    
+    print("encryption key at client: ",encryption_key) 
+
     return encryption_key
 
 
@@ -67,10 +69,26 @@ def client_programme():
     res=client_socket.recv(1024)
     deserialized_response=pickle.loads(res)
     print(deserialized_response)
+    encryption_key=establish_key(client_socket)
        
     while True:
-        try:
-            encryption_key=establish_key(client_socket)
+        try:       
+            
+            relayCipher=AES.task3_encryption(encryption_key)
+            relayCipher=str(relayCipher)
+            data={'relayCipher':relayCipher}
+            serialized_data=pickle.dumps(data)
+            client_socket.sendall(serialized_data)
+            
+            res=client_socket.recv(1024)
+            cipher=pickle.loads(res)
+            print("cipher received from server: ",cipher['relayCipher'])
+            ciphermsg=cipher['relayCipher']
+            plaintext=AES.task3_decryption(encryption_key,ciphermsg)
+            print("plaintext: ",plaintext)
+            
+            
+            
         except ConnectionResetError:
             # Handle server disconnection
             print("Connection with server closed")

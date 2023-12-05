@@ -5,7 +5,9 @@ import random
 import importlib
 
 f1='1905056_ECC'
+f2='1905056_AES'
 Elliptic=importlib.import_module(f1)
+AES=importlib.import_module(f2)
 
 def establish_key(client_socket):
     # Receive the shared parameters from client
@@ -16,7 +18,7 @@ def establish_key(client_socket):
     p=deserialized_response['p']
     x=deserialized_response['x']
     y=deserialized_response['y']
-    print("parameters: ",deserialized_response)
+    # print("parameters: ",deserialized_response)
     # change key here 
     e=Elliptic.generate_E(p)
     private_key=random.randint(1,e)
@@ -51,20 +53,40 @@ def handle_client(client_socket, addr):
     message = "Hello client!"
     serialized_message=pickle.dumps(message)
     client_socket.send(serialized_message)
+    encryption_key=establish_key(client_socket)
     
 
     while True:
         try:
-            encryption_key=establish_key(client_socket)
+            
+            
+            res=client_socket.recv(1024)
+            cipher=pickle.loads(res)
+            print("cipher received from client: ",cipher['relayCipher'])
+            ciphermsg=cipher['relayCipher']
+            plaintext=AES.task3_decryption(encryption_key,ciphermsg)
+            print("plaintext: ",plaintext) 
+            
+            
+            relayCipher=AES.task3_encryption(encryption_key)
+            relayCipher=str(relayCipher)
+            data={'relayCipher':relayCipher}
+            serialized_data=pickle.dumps(data)
+            client_socket.sendall(serialized_data)
+               
+            
         except ConnectionResetError:
             # Handle client disconnection
             print(f"Connection with {addr} closed")
             break
+        
+        hold=input("press enter to continue")
+        
+    
 
     # Close the connection with the client
     client_socket.close()
     print(f"Connection with {addr} closed and ended")
-
 
 
 
