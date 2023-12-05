@@ -77,15 +77,11 @@ def substitute_matriix_inverse_Sbox(matrix):
 
 def format_hex(hex_string):
     if len(hex_string) == 1:
-        return "0" + hex_string
+        return "0" + str(hex_string)
     else:
-        return hex_string
+        return str(hex_string)
 
 def convert_to_hex(string):
-    length = len(string)
-    if length<16:
-        for i in range(0,16-length):
-            string+=" "
     hex_string = ""
     for char in string:
         temp=hex(ord(char))[2:]
@@ -121,7 +117,6 @@ def generate_g(string,roundConstant):
     firstbyte= hex(int(substituted_string[0:2],16) ^ int( roundConstant))[2:]
     firstbyte=format_hex(firstbyte)
     substituted_string = firstbyte + substituted_string[2:]
-    # print ("g: ",roundConstant,substituted_string)
     return substituted_string
 
 def column_major_convert(string):
@@ -148,14 +143,28 @@ def xOr_twoWords(word1,word2):
         result +=temp
     return result
 
-def xOR_two_matrix(matrix1,matrix2):
-    for i in range(0,4):
-        for j in range(0,4):
-            temp=hex(int(matrix1[i][j],16) ^ int(matrix2[i][j],16))[2:]
-            temp+=""
-            temp=format_hex(temp)
-            matrix1[i][j]=temp
-    return matrix1
+def xOR_two_matrix(matrix1, matrix2):
+    result_matrix = []
+    for i in range(len(matrix1)):
+        row = []
+        for j in range(len(matrix1[0])):
+            # Ensure that matrix elements are valid hexadecimal strings
+            try:
+                val1 = int(matrix1[i][j], 16)
+                val2 = int(matrix2[i][j], 16)
+            except ValueError:
+                raise ValueError("Invalid hexadecimal representation in matrices")
+
+            # XOR the values and convert back to hexadecimal
+            temp = hex(val1 ^ val2)[2:]
+            
+            # Pad with zero if needed
+            temp = temp.zfill(2)
+
+            row.append(temp)
+        result_matrix.append(row)
+    return result_matrix
+
 
 def generate_w_XOR(string1,string2):
     w1=string1[0:8]
@@ -211,129 +220,142 @@ def inverse_mix_column(matrix):
     return result_matrix
 
 
+def key_resizing(key):
+    key=str(key)
+    length=len(key)
+    if length<16:
+        for i in range(0,16-length):
+            key+="~"
+    elif length>16:
+        key=key[0:16]
+    return key
 
 
+def message_block(plaintext):
+    plaintext=str(plaintext)
+    length=len(plaintext)
+    if length%16!=0:
+        for i in range(0,16-(length%16)):
+            plaintext+=" "
+    plaintext=convert_to_hex(plaintext)
+    message=[]
+    for i in range(0,len(plaintext),32):
+        message.append(plaintext[i:i+32])
+    return message
+
+def ciphertext_resize(plaintext):
+    plaintext=str(plaintext)
+    message=[]
+    for i in range(0,len(plaintext),32):
+        message.append(plaintext[i:i+32])
+    return message
+   
 
 
-
-inputKey = "Thats my Kung Fu"
-inputText = "yo yo"
-convertedHexKey = convert_to_hex(inputKey)
-
-roundKeys = []
-roundKeys.append(convertedHexKey[0:32])
-previousRoundConstant=0x00
-for i in range(0,10):
-    previousRoundConstant = calculate_round_constant(previousRoundConstant)
-    gOfInput=generate_g(convertedHexKey[24:32],previousRoundConstant)
-    roundkey=generate_w_XOR(convertedHexKey[0:32],gOfInput)
-    roundKeys.append(roundkey)
-    convertedHexKey=roundkey
-
-# for i in range(0,len(roundKeys)):
-#     print("Round Key ",i,": ",roundKeys[i])
+def encryption(key,IV,message):
     
-plainText = convert_to_hex(inputText)
-print("Plain Text: ",plainText)
-state = column_major_convert(plainText)
-# print("State: ",state)
-# add round key
-state=xOR_two_matrix(state,column_major_convert(roundKeys[0]))
-print("State after add round key: ",state)
-
-# rounds
-for i in range(0,10):
-    # print("Round ",i+1,": ")
-    # substitute bytes
-    state=substitute_matriix_Sbox(state)
-    # print("State after substitute bytes: ",state)
-    # shift rows
-    state=shift_rows(state)
-    # print("State after shift rows: ",state)
-    # mix columns
-    if i!=9:
-        state=mix_column(state)
-    # print("State after mix columns: ",state)
+    roundKeys = []
+    roundKeys.append(key[0:32])
+    previousRoundConstant=0x00
+    for i in range(0,10):
+        previousRoundConstant = calculate_round_constant(previousRoundConstant)
+        gOfInput=generate_g(key[24:32],previousRoundConstant)
+        roundkey=generate_w_XOR(key[0:32],gOfInput)
+        roundKeys.append(roundkey)
+        key=roundkey
+    state = column_major_convert(message)
+    iv=column_major_convert(IV)
+    state=xOR_two_matrix(state,iv)
+    round_key_matrix=column_major_convert(roundKeys[0])
     # add round key
-    state=xOR_two_matrix(state,column_major_convert(roundKeys[i+1]))
-    # print("State after add round key: ",state)
+    state=xOR_two_matrix(state,round_key_matrix)
+    # rounds
+    for i in range(0,10):
+        state=substitute_matriix_Sbox(state)
+        state=shift_rows(state)
+        if i!=9:
+            state=mix_column(state)
+        state=xOR_two_matrix(state,column_major_convert(roundKeys[i+1]))
 
-cipherTextToRelay=column_major_to_string(state)
-print("Cipher Text: ",cipherTextToRelay)
-
-
-
-# # substitute bytes
-# state=substitute_matriix_Sbox(state)
-# print("State after substitute bytes: ",state)
-# # shift rows
-# state=shift_rows(state)
-# print("State after shift rows: ",state)
-# # mix columns
-# state=mix_column(state)
-# print("State after mix columns: ",state)
-# # add round key
-# state=xOR_two_matrix(state,column_major_convert(roundKeys[1]))
-# print("State after add round key: ",state)
-
-
-
-# roundKeys = []
-# roundKeys.append(convertedHexKey[0:32])
-# previousRoundConstant=0x00
-# for i in range(0,10):
-#     previousRoundConstant = calculate_round_constant(previousRoundConstant)
-#     gOfInput=generate_g(convertedHexKey[24:32],previousRoundConstant)
-#     roundkey=generate_w_XOR(convertedHexKey[0:32],gOfInput)
-#     roundKeys.append(roundkey)
-#     convertedHexKey=roundkey
-
-
-
-secretKeyAtReceiverEnd = "Thats my Kung Fu"
-cipherTextReceived = cipherTextToRelay
-secretKeyHex = convert_to_hex(secretKeyAtReceiverEnd)
-
-roundKeysDecr = []
-roundKeysDecr.append(secretKeyHex)
-prevRoundConstant=0x00
-for i in range(0,10):
-    prevRoundConstant = calculate_round_constant(prevRoundConstant)
-    gOfW=generate_g(secretKeyHex[24:32],prevRoundConstant)
-    roundkeyR=generate_w_XOR(secretKeyHex,gOfW)
-    roundKeysDecr.append(roundkeyR)
-    secretKeyHex=roundkeyR
+    cipherTextToRelay=column_major_to_string(state)
+    return cipherTextToRelay
+   
+   
+def decryption(key,IV,message):
     
-for i in range(0,len(roundKeysDecr)):
-    print("Round Key ",i,": ",roundKeysDecr[i])
-    
-    
-    
-    
-    
-cipherMatrix = column_major_convert(cipherTextReceived)
-cipherMatrix=xOR_two_matrix(cipherMatrix,column_major_convert(roundKeysDecr[10]))
-print("State after add round key: ",cipherMatrix)
-# rounds
-for i in range(9,0,-1):
-    print("Round ",i,": ")
-    # inverse shift rows
+    roundKeysDecr = []
+    roundKeysDecr.append(key)
+    prevRoundConstant=0x00
+    for i in range(0,10):
+        prevRoundConstant = calculate_round_constant(prevRoundConstant)
+        gOfW=generate_g(key[24:32],prevRoundConstant)
+        roundkeyR=generate_w_XOR(key,gOfW)
+        roundKeysDecr.append(roundkeyR)
+        key=roundkeyR
+    cipherMatrix = column_major_convert(message)
+    cipherMatrix=xOR_two_matrix(cipherMatrix,column_major_convert(roundKeysDecr[10]))
+    # rounds
+    for i in range(9,0,-1):
+        cipherMatrix=inverse_shift_rows(cipherMatrix)
+        cipherMatrix=substitute_matriix_inverse_Sbox(cipherMatrix)
+        cipherMatrix=xOR_two_matrix(cipherMatrix,column_major_convert(roundKeysDecr[i]))
+        cipherMatrix=inverse_mix_column(cipherMatrix)
+
     cipherMatrix=inverse_shift_rows(cipherMatrix)
-    print("State after inverse shift rows: ",cipherMatrix)
-    # inverse substitute bytes
     cipherMatrix=substitute_matriix_inverse_Sbox(cipherMatrix)
-    print("State after inverse substitute bytes: ",cipherMatrix)
-    # add round key
-    cipherMatrix=xOR_two_matrix(cipherMatrix,column_major_convert(roundKeysDecr[i]))
-    print("State after add round key: ",cipherMatrix)
-    # inverse mix columns
-    cipherMatrix=inverse_mix_column(cipherMatrix)
-    print("State after inverse mix columns: ",cipherMatrix)
-    
-cipherMatrix=inverse_shift_rows(cipherMatrix)
-cipherMatrix=substitute_matriix_inverse_Sbox(cipherMatrix)
-cipherMatrix=xOR_two_matrix(cipherMatrix,column_major_convert(roundKeysDecr[0]))
-messageReceived = column_major_to_string(cipherMatrix)
+    cipherMatrix=xOR_two_matrix(cipherMatrix,column_major_convert(roundKeysDecr[0]))
+    iv=column_major_convert(IV)
+    plaint_text=xOR_two_matrix(cipherMatrix,iv)
+    text=column_major_to_string(plaint_text)
+    return text
 
-messageReceived = convert_to_string(messageReceived)
-print("Message Received: ",messageReceived)
+
+
+
+
+
+
+def task1_encryption():
+    key=input("Enter the key: ")
+    key=key_resizing(key)
+    key=convert_to_hex(key)
+    IV=input("Enter the IV: ")
+    IV=key_resizing(IV)
+    IV=convert_to_hex(IV)
+    plaintext=input("Enter the message: ")
+    message=message_block(plaintext)
+    cipher_text=[]
+    for i in range(0,len(message)):
+        temp=encryption(key,IV,message[i])
+        IV=temp
+        cipher_text.append(temp)
+    cipherTextToRelay=""
+    for i in range(0,len(cipher_text)):
+        cipherTextToRelay+=cipher_text[i]
+    print("Cipher Text: ",cipherTextToRelay)
+    
+def task1_decryption():
+    key=input("Enter the key for decryption: ")
+    key=key_resizing(key)
+    key=convert_to_hex(key)
+    IV=input("Enter the IV for decryption: ")
+    IV=key_resizing(IV)
+    IV=convert_to_hex(IV)
+    ciphertext=input("Enter the ciphertext for decryption: ")
+    ciphertext=ciphertext_resize(ciphertext)
+    plaintext_array=[]
+    for i in range(0,len(ciphertext)):
+        temp=decryption(key,IV,ciphertext[i])
+        IV=ciphertext[i]
+        plaintext_array.append(temp)
+    plaintext=""
+    for i in range(0,len(plaintext_array)):
+        plaintext+=convert_to_string(plaintext_array[i])
+    print("Message Received: ",plaintext)
+        
+    
+    
+    
+    
+task1_encryption()
+task1_decryption()
