@@ -3,24 +3,37 @@ import math
 import random
 
 
-def double(x, y, a, p):
-    if y == 0:
+def point_double(x, y, a, b, p):
+    if x == 0 and y == 0:
         return (0, 0)
-    s = (3 * x * x + a)
-    s = s/(2*y)
-    s = s % p
-    x_r = (s * s - 2 * x) % p
-    y_r = (s * (x - x_r) - y) % p
-    return (x_r, y_r)
+    
+    numerator = (3 * x * x + a)
+    denominator = pow(2 * y, -1, p) % p
+    slope = (numerator * denominator) % p
+    
+    x3 = (slope * slope - 2 * x) % p
+    y3 = (slope * (x - x3) - y) % p
+    
+    return (x3, y3)
+    
+    
 
 
-def addition(x1, y1, x2, y2, a, p):
+def point_addition(x1, y1, x2, y2, a, b, p):
+    if x1 == 0 and y1 == 0:
+        return (x2, y2)
+    if x2 == 0 and y2 == 0:
+        return (x1, y1)
     if x1 == x2 and y1 == y2:
-        return double(x1, y1, a, p)
-    s=(y2-y1)/(x2-x1)
-    x_r=(s*s-x1-x2)%p
-    y_r=(s*(x1-x_r)-y1)%p
-    return (x_r, y_r)
+        return point_double(x1, y1, a, b, p)
+    slope = ((y2 - y1) * pow(x2 - x1, -1, p)) % p
+    x3 = (slope * slope - x1 - x2) % p
+    y3 = (slope * (x1 - x3) - y1) % p
+    
+    return (x3, y3)
+    
+    
+    
 
 
 def generate_E(primeP):
@@ -64,18 +77,41 @@ def generate_point_G(primeP, a, b):
     y=y%primeP
     return (x,y)
 
-def calculate_kG(k, x, y, a, p):
-    # k in binary
-    k_binary = bin(k)[2:]
-    print(f"k in binary: {k_binary}")
-    # kG
-    kG = (x,y)
-    for i in range(len(k_binary)):
-        if k_binary[i] == '1':
-            kG = addition(kG[0], kG[1], x, y, a, p)
-        kG = double(kG[0], kG[1], a, p)
-    return kG
+def calculate_kG(a,b,p,x,y,k):
+    result = (0, 0)
+    binary = bin(k)[2:]
+    # print(f"Binary: {binary}")
+    for i in binary:
+        result = point_double(result[0], result[1], a, b, p)
+        if i == '1':
+            result = point_addition(result[0], result[1], x, y, a, b, p)
+    return result
 
+def get_parameters():
+    
+    primeP = 17
+    a=2
+    b=2
+    x=5
+    y=1
+    return (a,b,primeP,x,y)
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
