@@ -95,7 +95,6 @@ def convert_to_string(hex_string):
     for i in range(0,len(hex_string),2):
         string+=chr(int(hex_string[i:i+2],16))
     return string
-rvtAW 
 
 
 def calculate_round_constant(prev):
@@ -426,7 +425,7 @@ def task3_decryption(key,ciphertext):
     
     
     
-task1_encryption()
-task1_decryption()
+# task1_encryption()
+# task1_decryption()
 
 
